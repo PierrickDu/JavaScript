@@ -42,12 +42,10 @@ function startGame() {
     for(let i = 0; i<10; i++){
         getRandomSpawn();
         GraphObjects.push(new Enemy(randomPos.x, randomPos.y, 50, 50));        
-    }
-    projectile = new Projectile(10,10,10,10);
+    }    
     lifeBar = new GraphObj(5, 5, 205, 10, 'red');
-    xpBar = new GraphObj(5, 20, 0, 10, 'yellow');
-    target = new Target(20, 20, 20, 20);
-    GraphObjects.push(projectile);
+    xpBar = new GraphObj(5, 20, 0, 10, 'yellow');    
+    target = new Target(20, 20, 20, 20);    
     ATH.push(new GraphObj(0, 0, 210, 5));
     ATH.push(new GraphObj(0, 15, 210, 5));
     ATH.push(new GraphObj(0, 0, 5, 15));
@@ -82,16 +80,17 @@ function animationLoop() {
             });           
             GraphObjects.forEach (o => {
                 if(o instanceof Enemy){
-                    o.move(player)
-                }                
-            }) ;
+                    o.move(player);
+                }    
+                else if (o instanceof Projectile){
+                    o.move();
+                }            
+            }) ;            
             GraphObjects.push(frontStrike);
             frontStrike.hit(player, inputState);
             target.followMouse(mousePos);
             testeEtatClavierPourJoueur();         
-            player.move();
-            projectile.trajectory(player, mousePos);
-            projectile.move();
+            player.move();             
             if (player.hp<=0){
                 gameState = 'gameOver';
             }
@@ -128,6 +127,19 @@ function detecteCollisionJoueurAvecObstaclesEtPieces() {
                 lifeBar.l = player.hp+5;                
                 //assets.plop.play();
             }
+            GraphObjects.forEach((p, indexp) => {
+                if (p instanceof Projectile){
+                    if(rectsOverlap(p.x, p.y, p.l, p.h, o.x, o.y, o.l, o.h)){
+                        GraphObjects.splice(index, 1);    
+                        GraphObjects.splice(indexp, 1);  
+                        GraphObjects.push(new Xp ((o.x+o.l/2), (o.y+o.h/2), 10, 10))
+                        getRandomSpawn();
+                        o.x = randomPos.x;
+                        o.y = randomPos.y;
+                        GraphObjects.push(o);
+                    }
+                }
+            })
         } else if(o instanceof Xp) {
             if (rectsOverlap(player.x, player.y, player.l, player.h, o.x, o.y, o.l, o.h)) {
                 GraphObjects.splice(index, 1);
@@ -139,7 +151,7 @@ function detecteCollisionJoueurAvecObstaclesEtPieces() {
                 xpBar.l = player.xp+5;
                 console.log(player.xp);
             }
-        }
+        } 
     });
 
     if (collisionExist) {
@@ -153,7 +165,10 @@ function detecteCollisionJoueurAvecObstaclesEtPieces() {
 
 function testeEtatClavierPourJoueur() {        
     player.vx=((inputState.left+inputState.right)*player.speed); 
-    player.vy=((inputState.up+inputState.down)*player.speed);         
+    player.vy=((inputState.up+inputState.down)*player.speed); 
+    if(inputState.space==true){
+        GraphObjects.push(new Projectile(player, mousePos));
+    }        
 }
 
 function getRandomSpawn(){    
