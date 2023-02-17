@@ -2,15 +2,17 @@ import GraphObj from "./GraphObj.js";
 
 export default class Player extends GraphObj {
 
+    static hp = 200;
+    static hpMax = 200;
+    static xp = 0;
+    static xpMax = 100;
+    static lv =1;
 
     constructor() {
         super(50, 50, 50, 50, 'black'); 
         this.vx = 0;
         this.vy = 0;
-        this.speed = 5;     
-        this.hp = 200;
-        this.xp = 0;   
-        this.lv = 1;
+        this.speed = 5; 
     }    
 
     move() {    

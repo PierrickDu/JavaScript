@@ -17,4 +17,20 @@ export default class Projectile extends GraphObj {
         this.y += this.vy*Projectile.speed;
     }
 
+    testeCollisionAvecBordsDuCanvas(largeurCanvas, hauteurCanvas) {
+        if (this.x + this.l > largeurCanvas) {            
+            return true;         
+        }
+        if (this.x < 0) {            
+            return true; ;            
+        }
+        if (this.y + this.h > largeurCanvas) {            
+            return true;             
+        }
+        if (this.y < 0) {            
+            return true;             
+        }
+        return false; 
+    }
+
 }

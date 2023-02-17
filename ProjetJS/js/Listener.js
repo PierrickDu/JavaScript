@@ -7,6 +7,18 @@ function addMouseListener() {
         mousePos.x = event.clientX - rect.left;
         mousePos.y = event.clientY - rect.top;
     }
+
+    window.onmousedown = (event) => {
+        if(event.which==1){
+            inputState.rc = true;
+        }
+    }
+
+    window.onmouseup = (event) => {
+        if(event.which==1){
+            inputState.rc = false;
+        }
+    }
 }
 
 function addKeyboardListener() {

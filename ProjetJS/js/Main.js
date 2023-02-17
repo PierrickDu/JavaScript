@@ -8,20 +8,14 @@ import Player from './Player.js';
 import Xp from './Xp.js';
 import Target from'./Target.js';
 import Projectile from './Projectile.js';
+import ATH from './ATH.js';
 
 let canvas, ctx;
 let gameState = 'jeuEnCours';
 let GraphObjects = [];
-let ATH = [];
 let player;
 let randomPos = {x: 0, y: 0};
-let lifeBar;
-let xpBar;
-
-
-let frontStrike;
-let target;
-let projectile;
+let ack;
 
 window.onload = init;
 
@@ -37,25 +31,12 @@ function startGame() {
     addKeyboardListener();
     addMouseListener();
     player = new Player();
-    frontStrike = new FrontStrike()
     GraphObjects.push(player);
     for(let i = 0; i<10; i++){
         getRandomSpawn();
         GraphObjects.push(new Enemy(randomPos.x, randomPos.y, 50, 50));        
     }    
-    lifeBar = new GraphObj(5, 5, 205, 10, 'red');
-    xpBar = new GraphObj(5, 20, 0, 10, 'yellow');    
-    target = new Target(20, 20, 20, 20);    
-    ATH.push(new GraphObj(0, 0, 210, 5));
-    ATH.push(new GraphObj(0, 15, 210, 5));
-    ATH.push(new GraphObj(0, 0, 5, 15));
-    ATH.push(new GraphObj(210, 0, 5, 20));    
-    ATH.push(new GraphObj(0, 30, 210, 5));
-    ATH.push(new GraphObj(0, 15, 5, 15));
-    ATH.push(new GraphObj(210, 15, 5, 20));
-    ATH.push(xpBar);
-    ATH.push(lifeBar);    
-    ATH.push(target);
+    GraphObjects.push(new ATH()); 
     requestAnimationFrame(animationLoop);
 }
 
@@ -74,10 +55,7 @@ function animationLoop() {
         case 'jeuEnCours': 
             GraphObjects.forEach(o => {                
                 o.draw(ctx);
-            }); 
-            ATH.forEach(o => {                
-                o.draw(ctx);
-            });           
+            });          
             GraphObjects.forEach (o => {
                 if(o instanceof Enemy){
                     o.move(player);
@@ -85,18 +63,21 @@ function animationLoop() {
                 else if (o instanceof Projectile){
                     o.move();
                 }            
-            }) ;            
-            GraphObjects.push(frontStrike);
-            frontStrike.hit(player, inputState);
-            target.followMouse(mousePos);
+            }) ; 
             testeEtatClavierPourJoueur();         
             player.move();             
             if (player.hp<=0){
                 gameState = 'gameOver';
             }
             player.testeCollisionAvecBordsDuCanvas(canvas.width, canvas.height);
+            GraphObjects.forEach((o, index)=> {
+                if(o instanceof Projectile){
+                    if(o.testeCollisionAvecBordsDuCanvas(canvas.width, canvas.height)==true){
+                        GraphObjects.splice(index, 1);
+                    }
+                }
+            });
             detecteCollisionJoueurAvecObstaclesEtPieces();
-            //detecteCollisionJoueurAvecSortie();
             break;
     }    
     requestAnimationFrame(animationLoop);
@@ -106,27 +87,16 @@ function detecteCollisionJoueurAvecObstaclesEtPieces() {
     let collisionExist = false;    
     GraphObjects.forEach((o, index) => {
         if (o instanceof Enemy) {
-            if (rectsOverlap(player.x, player.y, player.l, player.h, o.x, o.y, o.l, o.h)) {
-                collisionExist = true; 
-                player.hp-=5;
+            if (rectsOverlap(player.x, player.y, player.l, player.h, o.x, o.y, o.l, o.h)) {                                
+                Player.hp-=5;
                 GraphObjects.splice(index, 1);
                 GraphObjects.push(new Xp ((o.x+o.l/2), (o.y+o.h/2), 10, 10))
                 getRandomSpawn();
                 o.x = randomPos.x;
                 o.y = randomPos.y;
                 GraphObjects.push(o);
-                lifeBar.l = player.hp+5;                
                 //assets.plop.play();
-            } else if (rectsOverlap(frontStrike.x, frontStrike.y, frontStrike.l, frontStrike.h, o.x, o.y, o.l, o.h)){
-                GraphObjects.splice(index, 1);
-                GraphObjects.push(new Xp ((o.x+o.l/2), (o.y+o.h/2), 10, 10))
-                getRandomSpawn();
-                o.x = randomPos.x;
-                o.y = randomPos.y;
-                GraphObjects.push(o);
-                lifeBar.l = player.hp+5;                
-                //assets.plop.play();
-            }
+            } 
             GraphObjects.forEach((p, indexp) => {
                 if (p instanceof Projectile){
                     if(rectsOverlap(p.x, p.y, p.l, p.h, o.x, o.y, o.l, o.h)){
@@ -143,32 +113,27 @@ function detecteCollisionJoueurAvecObstaclesEtPieces() {
         } else if(o instanceof Xp) {
             if (rectsOverlap(player.x, player.y, player.l, player.h, o.x, o.y, o.l, o.h)) {
                 GraphObjects.splice(index, 1);
-                player.xp += 5;                
-                if(player.xp>=player.lv*100){
-                    player.xp-=player.lv*100;
-                    player.lv++;                    
+                Player.xp += 5;                
+                if(Player.xp>=Player.xpMax){
+                    Player.xp-=Player.xpMax;
+                    Player.lv++; 
+                    Player.xpMax+=50                   
                 }
-                xpBar.l = player.xp+5;
-                console.log(player.xp);
             }
         } 
     });
-
-    if (collisionExist) {
-        player.color = 'red';
-        //gameState = 'gameOver';
-        //player.x -= 10;
-    } else {
-        player.color= 'green';
-    }
 }
 
 function testeEtatClavierPourJoueur() {        
     player.vx=((inputState.left+inputState.right)*player.speed); 
     player.vy=((inputState.up+inputState.down)*player.speed); 
-    if(inputState.space==true){
+    if(inputState.rc==true && ack==true){        
         GraphObjects.push(new Projectile(player, mousePos));
-    }        
+        ack=false;
+    } 
+    if(inputState.rc==false){
+        ack=true;
+    }       
 }
 
 function getRandomSpawn(){    
